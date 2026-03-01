@@ -1,0 +1,103 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Testing & Coverage ───────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.coveragerc
+nosetests.xml
+test-results/
+
+# ─── Type checking ────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyright/
+
+# ─── Linting / Formatting ─────────────────────────────────────────────────────
+.ruff_cache/
+
+# ─── Ray / RLLib ──────────────────────────────────────────────────────────────
+ray_results/
+~/ray_results/
+ray_logs/
+/tmp/ray/
+
+# ─── PyTorch ──────────────────────────────────────────────────────────────────
+*.pt
+*.pth
+*.ckpt
+
+# ─── MLflow ───────────────────────────────────────────────────────────────────
+mlruns/
+mlartifacts/
+
+# ─── Weights & Biases ─────────────────────────────────────────────────────────
+wandb/
+
+# ─── Hydra ────────────────────────────────────────────────────────────────────
+outputs/
+multirun/
+.hydra/
+
+# ─── Data & Results ───────────────────────────────────────────────────────────
+data/
+results/
+logs/
+*.log
+*.csv
+*.json
+!pyproject.toml  # keep config JSON-like files
+
+# ─── Jupyter Notebooks ────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── Secrets / Environment ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
