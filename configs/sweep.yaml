@@ -1,0 +1,19 @@
+program: scripts/train_federated.py
+method: bayes
+metric:
+  name: global/avg_reward
+  goal: maximize
+parameters:
+  federation.num_rounds:
+    values: [50, 100, 200]
+  federation.local_epochs:
+    values: [3, 5, 10]
+  federation.strategy:
+    values: ["fedavg", "fedprox"]
+  federation.mu:
+    min: 0.001
+    max: 0.1
+  training.lr:
+    distribution: log_uniform_values
+    min: 0.00001
+    max: 0.01
