@@ -1,0 +1,50 @@
+federation:
+  num_clients: 5
+  num_rounds: 100
+  local_epochs: 5
+  strategy: "fedavg"         # or "fedprox"
+  mu: 0.01                   # FedProx proximal term
+  client_sampling_rate: 1.0  # fraction of clients per round
+
+client_envs:
+  # Client 0: Small edge site, low traffic
+  - num_nodes: 3
+    task_arrival_rate: 1.5
+    cpu_range: [30, 80]
+    mem_range: [16, 32]
+    episode_length: 1000
+
+  # Client 1: Large data center, high traffic
+  - num_nodes: 10
+    task_arrival_rate: 8.0
+    cpu_range: [100, 200]
+    mem_range: [64, 256]
+    episode_length: 1000
+
+  # Client 2: Mobile edge, bursty traffic
+  - num_nodes: 4
+    task_arrival_rate: 5.0
+    cpu_range: [20, 60]
+    mem_range: [8, 16]
+    episode_length: 1000
+
+  # Client 3: Industrial IoT, steady traffic
+  - num_nodes: 6
+    task_arrival_rate: 3.0
+    cpu_range: [50, 100]
+    mem_range: [32, 64]
+    episode_length: 1000
+
+  # Client 4: Rural edge, sparse traffic
+  - num_nodes: 2
+    task_arrival_rate: 0.8
+    cpu_range: [20, 50]
+    mem_range: [8, 16]
+    episode_length: 1000
+
+training:
+  lr: 0.0003
+  gamma: 0.99
+  obs_dim: 50   # depends on num_nodes and max_pending
+  act_dim: 6    # num_nodes + 1 (reject)
+  strategy: "fedavg"
