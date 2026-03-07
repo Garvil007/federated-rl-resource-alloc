@@ -1,4 +1,9 @@
 program: scripts/train_federated.py
+command:
+  - ${env}
+  - .venv\Scripts\python.exe
+  - ${program}
+  - ${args_no_hyphens}
 method: bayes
 metric:
   name: global/avg_reward

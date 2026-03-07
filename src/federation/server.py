@@ -10,11 +10,11 @@ from src.federation.client import FederatedClient
 class FederationServer:
     def __init__(self, config):
         self.config = config
-        self.num_clients = config["num_clients"]
-        self.num_rounds = config["num_rounds"]
-        self.local_epochs = config["local_epochs"]
-        self.strategy = config.get("strategy", "fedavg")
-        self.mu = config.get("mu", 0.01)
+        self.num_clients = config["federation"]["num_clients"]
+        self.num_rounds = config["federation"]["num_rounds"]
+        self.local_epochs = config["federation"]["local_epochs"]
+        self.strategy = config["federation"].get("strategy", "fedavg")
+        self.mu = config["federation"].get("mu", 0.01)
         self.global_model = self._init_global_model()
 
         # Create heterogeneous edge clients

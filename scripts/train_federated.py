@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import ray
 import wandb
 import hydra
@@ -5,7 +9,7 @@ from omegaconf import DictConfig, OmegaConf
 from src.federation.server import FederationServer
 
 
-@hydra.main(config_path="../configs", config_name="training/federated_5clients")
+@hydra.main(version_base=None, config_path="../configs/training", config_name="federated_5clients")
 def main(cfg: DictConfig):
     # Initialize Ray
     ray.init()

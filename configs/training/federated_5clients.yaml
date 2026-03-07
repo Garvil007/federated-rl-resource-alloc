@@ -45,6 +45,6 @@ client_envs:
 training:
   lr: 0.0003
   gamma: 0.99
-  obs_dim: 50   # depends on num_nodes and max_pending
-  act_dim: 6    # num_nodes + 1 (reject)
+  obs_dim: 70   # depends on num_nodes and max_pending
+  act_dim: 11    # num_nodes + 1 (reject)
   strategy: "fedavg"

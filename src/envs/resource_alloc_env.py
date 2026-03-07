@@ -51,15 +51,17 @@ class ResourceAllocationEnv(gym.Env):
         self.task_arrival_rate = cfg.get("task_arrival_rate", 3.0)
         self.seed_val = cfg.get("seed", 42)
 
-        # Observation: [node_features(N*4) + task_features(M*3)]
-        obs_dim = self.num_nodes * 4 + self.max_pending * 3
+        self.max_nodes = cfg.get("max_nodes", 10)
+        
+        # Observation: [node_features(max_nodes*4) + task_features(max_pending*3)]
+        obs_dim = self.max_nodes * 4 + self.max_pending * 3
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32
         )
 
         # Action: assign each pending task to a node (or reject)
         self.action_space = spaces.MultiDiscrete(
-            [self.num_nodes + 1] * self.max_pending
+            [self.max_nodes + 1] * self.max_pending
         )
 
         # Reward weights (tunable hyperparameters)
@@ -96,7 +98,7 @@ class ResourceAllocationEnv(gym.Env):
                 break
             task = self.pending_tasks[task_idx]
 
-            if node_idx == self.num_nodes:  # reject
+            if node_idx >= self.num_nodes:  # reject or invalid padded node
                 self.total_dropped += 1
                 rewards.append(self.w_drop)
             elif self.nodes[node_idx].can_accept:
@@ -142,6 +144,10 @@ class ResourceAllocationEnv(gym.Env):
                     min(len(node.task_queue) / 20.0, 1.0),
                 ]
             )
+
+        pad_nodes = self.max_nodes - len(self.nodes)
+        if pad_nodes > 0:
+            node_features.extend([0.0] * (pad_nodes * 4))
 
         task_features = []
         for i in range(self.max_pending):
