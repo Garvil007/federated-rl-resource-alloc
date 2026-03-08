@@ -16,6 +16,7 @@ class FederationServer:
         self.strategy = config["federation"].get("strategy", "fedavg")
         self.mu = config["federation"].get("mu", 0.01)
         self.global_model = self._init_global_model()
+        self.history = []
 
         # Create heterogeneous edge clients
         self.clients = [
@@ -75,27 +76,23 @@ class FederationServer:
             ]
             avg_divergence = sum(divergences) / len(divergences)
 
-            # 5. Log aggregated metrics
-            wandb.log(
-                {
-                    "round": round_num,
-                    "global/avg_reward": avg_reward,
-                    "global/reward_std": float(torch.std(torch.tensor(client_rewards))),
-                    "global/weight_divergence": avg_divergence,
-                    "global/round_duration_s": round_duration,
-                }
-            )
-
-            # Log per-client metrics
+            # 5. Collect metrics for the main process to log
+            # Instead of wandb.log() here in the actor process, 
+            # we simply accumulate the logs.
+            round_metrics = {
+                "round": round_num,
+                "global/avg_reward": avg_reward,
+                "global/reward_std": float(torch.std(torch.tensor(client_rewards))),
+                "global/weight_divergence": avg_divergence,
+                "global/round_duration_s": round_duration,
+            }
+            
             for cid, (_, _, metrics) in enumerate(client_results):
-                wandb.log(
-                    {
-                        "round": round_num,
-                        f"client_{cid}/reward": metrics["reward"],
-                        f"client_{cid}/sla_rate": metrics["sla_rate"],
-                        f"client_{cid}/loss": metrics["loss"],
-                    }
-                )
+                round_metrics[f"client_{cid}/reward"] = metrics["reward"]
+                round_metrics[f"client_{cid}/sla_rate"] = metrics["sla_rate"]
+                round_metrics[f"client_{cid}/loss"] = metrics["loss"]
+            
+            self.history.append(round_metrics)
 
             print(
                 f"Round {round_num}/{self.num_rounds} | "
@@ -104,4 +101,4 @@ class FederationServer:
                 f"Duration: {round_duration:.1f}s"
             )
 
-        return self.global_model.state_dict()
+        return self.global_model.state_dict(), self.history

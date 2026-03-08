@@ -26,7 +26,10 @@ def main(cfg: DictConfig):
 
     # Create and run federation server
     server = FederationServer.remote(config)
-    final_weights = ray.get(server.run_federation.remote())
+    final_weights, log_history = ray.get(server.run_federation.remote())
+
+    for round_metrics in log_history:
+        wandb.log(round_metrics)
 
     # Save final global model
     import torch
