@@ -26,6 +26,8 @@ def build_ppo_config(env_cfg: dict, train_cfg: dict) -> PPOConfig:
             num_sgd_iter=train_cfg.get("num_sgd_iter", 10),
             sgd_minibatch_size=train_cfg.get("minibatch", 256),
             train_batch_size=train_cfg.get("batch_size", 4000),
+            entropy_coeff=train_cfg.get("entropy_coeff", 0.01),
+            vf_loss_coeff=train_cfg.get("vf_loss_coeff", 0.5),
             model={
                 "fcnet_hiddens": [256, 256, 128],
                 "fcnet_activation": "relu",

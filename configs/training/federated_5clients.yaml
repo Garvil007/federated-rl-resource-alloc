@@ -1,7 +1,7 @@
 federation:
   num_clients: 5
   num_rounds: 100
-  local_epochs: 5
+  local_epochs: 10
   strategy: "fedavg"         # or "fedprox"
   mu: 0.01                   # FedProx proximal term
   client_sampling_rate: 1.0  # fraction of clients per round
@@ -13,6 +13,7 @@ client_envs:
     cpu_range: [30, 80]
     mem_range: [16, 32]
     episode_length: 1000
+    max_nodes: 10
 
   # Client 1: Large data center, high traffic
   - num_nodes: 10
@@ -20,6 +21,7 @@ client_envs:
     cpu_range: [100, 200]
     mem_range: [64, 256]
     episode_length: 1000
+    max_nodes: 10
 
   # Client 2: Mobile edge, bursty traffic
   - num_nodes: 4
@@ -27,6 +29,7 @@ client_envs:
     cpu_range: [20, 60]
     mem_range: [8, 16]
     episode_length: 1000
+    max_nodes: 10
 
   # Client 3: Industrial IoT, steady traffic
   - num_nodes: 6
@@ -34,6 +37,7 @@ client_envs:
     cpu_range: [50, 100]
     mem_range: [32, 64]
     episode_length: 1000
+    max_nodes: 10
 
   # Client 4: Rural edge, sparse traffic
   - num_nodes: 2
@@ -41,10 +45,16 @@ client_envs:
     cpu_range: [20, 50]
     mem_range: [8, 16]
     episode_length: 1000
+    max_nodes: 10
 
 training:
   lr: 0.0003
   gamma: 0.99
-  obs_dim: 70   # depends on num_nodes and max_pending
-  act_dim: 11    # num_nodes + 1 (reject)
+  obs_dim: 70   # max_nodes*4 + max_pending*3 = 10*4 + 10*3
+  act_dim: 110  # (max_nodes+1) * max_pending = 11 * 10
+  hidden_dim: 256
+  entropy_coeff: 0.01
+  value_coeff: 0.5
+  num_rounds: 100
+  local_epochs: 10
   strategy: "fedavg"

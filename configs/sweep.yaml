@@ -12,7 +12,7 @@ parameters:
   federation.num_rounds:
     values: [50, 100, 200]
   federation.local_epochs:
-    values: [3, 5, 10]
+    values: [5, 10, 15]
   federation.strategy:
     values: ["fedavg", "fedprox"]
   federation.mu:
@@ -22,3 +22,9 @@ parameters:
     distribution: log_uniform_values
     min: 0.00001
     max: 0.01
+  training.entropy_coeff:
+    distribution: log_uniform_values
+    min: 0.001
+    max: 0.1
+  training.gamma:
+    values: [0.95, 0.99, 0.995]

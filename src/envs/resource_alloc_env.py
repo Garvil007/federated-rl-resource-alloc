@@ -66,10 +66,11 @@ class ResourceAllocationEnv(gym.Env):
 
         # Reward weights (tunable hyperparameters)
         self.w_throughput = cfg.get("w_throughput", 1.0)
-        self.w_latency = cfg.get("w_latency", -0.5)
-        self.w_energy = cfg.get("w_energy", -0.2)
+        self.w_latency = cfg.get("w_latency", -0.3)
+        self.w_energy = cfg.get("w_energy", -0.1)
         self.w_sla = cfg.get("w_sla", 2.0)
-        self.w_drop = cfg.get("w_drop", -3.0)
+        self.w_drop = cfg.get("w_drop", -2.0)
+        self.w_util = cfg.get("w_util", 0.3)  # utilization bonus
 
         self.reset()
 
@@ -109,11 +110,15 @@ class ResourceAllocationEnv(gym.Env):
                 if sla_ok:
                     self.total_sla_met += 1
                 energy = self.nodes[node_idx].energy_per_cpu * task["cpu"]
+                # Utilization bonus: reward balanced usage (penalize extreme under/over)
+                util = self.nodes[node_idx].cpu_util
+                util_bonus = self.w_util * (1.0 - abs(util - 0.6))  # sweet spot ~60%
                 r = (
                     self.w_throughput
                     + self.w_latency * latency
                     + self.w_energy * energy
                     + self.w_sla * float(sla_ok)
+                    + util_bonus
                 )
                 rewards.append(r)
             else:
@@ -138,10 +143,10 @@ class ResourceAllocationEnv(gym.Env):
         for node in self.nodes:
             node_features.extend(
                 [
-                    node.cpu_util,
-                    node.mem_util,
-                    node.bw_used / node.bw_capacity,
-                    min(len(node.task_queue) / 20.0, 1.0),
+                    np.clip(node.cpu_util, 0.0, 1.0),
+                    np.clip(node.mem_util, 0.0, 1.0),
+                    np.clip(node.bw_used / node.bw_capacity, 0.0, 1.0),
+                    np.clip(len(node.task_queue) / 20.0, 0.0, 1.0),
                 ]
             )
 
@@ -149,15 +154,19 @@ class ResourceAllocationEnv(gym.Env):
         if pad_nodes > 0:
             node_features.extend([0.0] * (pad_nodes * 4))
 
+        # Compute max capacities from actual nodes for normalization
+        max_cpu = max((n.cpu_capacity for n in self.nodes), default=100.0)
+        max_mem = max((n.mem_capacity for n in self.nodes), default=64.0)
+
         task_features = []
         for i in range(self.max_pending):
             if i < len(self.pending_tasks):
                 t = self.pending_tasks[i]
                 task_features.extend(
                     [
-                        t["cpu"] / 100.0,
-                        t["mem"] / 64.0,
-                        t["deadline"] / 10.0,
+                        np.clip(t["cpu"] / max_cpu, 0.0, 1.0),
+                        np.clip(t["mem"] / max_mem, 0.0, 1.0),
+                        np.clip(t["deadline"] / 10.0, 0.0, 1.0),
                     ]
                 )
             else:

@@ -5,6 +5,7 @@ env:
   max_pending_tasks: 10
   episode_length: 1000
   task_arrival_rate: 3.0
+  max_nodes: 10
 
 training:
   lr: 0.0003
@@ -17,3 +18,5 @@ training:
   workers: 4
   gpus: 0
   max_iters: 200
+  entropy_coeff: 0.01
+  vf_loss_coeff: 0.5
