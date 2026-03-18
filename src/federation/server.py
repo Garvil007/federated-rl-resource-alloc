@@ -1,6 +1,5 @@
 import ray
 import torch
-import wandb
 import time
 from src.federation.strategies import fed_avg, fed_prox, compute_weight_divergence
 from src.federation.client import FederatedClient

@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import numpy as np
 import torch
 import mlflow.pytorch
 from prometheus_client import Counter, Histogram, Gauge, generate_latest

@@ -3,8 +3,6 @@
 import mlflow
 import mlflow.pytorch
 from mlflow.tracking import MlflowClient
-import torch
-import json
 
 
 class ModelRegistry:

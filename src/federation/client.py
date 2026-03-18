@@ -1,7 +1,6 @@
 import ray
 import torch
 import torch.nn.functional as F
-import numpy as np
 from src.envs.resource_alloc_env import ResourceAllocationEnv
 from src.agents.policy_network import PolicyNetwork
 

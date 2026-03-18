@@ -1,7 +1,7 @@
 # src/mlops/metrics_exporter.py
 
 from prometheus_client import (
-    Counter, Gauge, Histogram, Summary, start_http_server
+    Counter, Gauge, Histogram, start_http_server
 )
 
 
