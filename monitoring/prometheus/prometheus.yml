@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  # Scrape federated training metrics
+  - job_name: "fed-rl-training"
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+    metrics_path: /metrics
+
+  # Scrape model serving endpoint
+  - job_name: "model-serving"
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+    metrics_path: /metrics
+
+  # Scrape Ray cluster metrics (if Ray dashboard is enabled)
+  - job_name: "ray-cluster"
+    static_configs:
+      - targets: ["host.docker.internal:8090"]
+
+  # Scrape Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
