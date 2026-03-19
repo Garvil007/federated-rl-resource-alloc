@@ -1,0 +1,90 @@
+name: Model Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_version:
+        description: "MLflow model version to deploy"
+        required: true
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}  # Requires GitHub environment approval
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Promote model in MLflow
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          python -c "
+          from src.mlops.model_registry import ModelRegistry
+          registry = ModelRegistry()
+          stage = 'Production' if '${{ inputs.environment }}' == 'production' else 'Staging'
+          registry.promote_model(
+              'fed-rl-resource-alloc',
+              version=${{ inputs.model_version }},
+              stage=stage,
+          )
+          print(f'Model v${{ inputs.model_version }} promoted to {stage}')
+          "
+
+      - name: Build serving Docker image
+        run: |
+          docker build \
+            -t fed-rl-serve:v${{ inputs.model_version }} \
+            -f docker/Dockerfile.serve .
+
+      - name: Push to container registry
+        run: |
+          echo ${{ secrets.DOCKER_TOKEN }} | \
+            docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+
+          docker tag fed-rl-serve:v${{ inputs.model_version }} \
+            ${{ secrets.DOCKER_REGISTRY }}/fed-rl-serve:v${{ inputs.model_version }}
+
+          docker tag fed-rl-serve:v${{ inputs.model_version }} \
+            ${{ secrets.DOCKER_REGISTRY }}/fed-rl-serve:latest
+
+          docker push ${{ secrets.DOCKER_REGISTRY }}/fed-rl-serve:v${{ inputs.model_version }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/fed-rl-serve:latest
+
+      - name: Deploy to environment
+        run: |
+          echo "Deploying model v${{ inputs.model_version }} to ${{ inputs.environment }}"
+          # Example: kubectl, docker-compose, AWS ECS, etc.
+          # kubectl set image deployment/fed-rl-serve \
+          #   fed-rl-serve=${{ secrets.DOCKER_REGISTRY }}/fed-rl-serve:v${{ inputs.model_version }}
+
+      - name: Verify deployment health
+        run: |
+          # Wait and check health endpoint
+          sleep 30
+          curl -f http://${{ vars.SERVE_HOST }}/health || exit 1
+          echo "Deployment health check PASSED"
+
+      - name: Notify team
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Model v${{ inputs.model_version }} deployed to ${{ inputs.environment }}: ${{ job.status }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

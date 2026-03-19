@@ -1,0 +1,120 @@
+name: Training Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "configs/**"
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: "Federation strategy"
+        default: "fedavg"
+        type: choice
+        options:
+          - fedavg
+          - fedprox
+      num_rounds:
+        description: "Number of federation rounds"
+        default: "50"
+      local_epochs:
+        description: "Local training epochs per client"
+        default: "5"
+      experiment_tag:
+        description: "Experiment tag for W&B"
+        default: "ci-run"
+
+env:
+  WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    # For GPU training, use self-hosted runner:
+    # runs-on: [self-hosted, gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run federated training
+        run: |
+          python scripts/train_federated.py \
+            federation.strategy=${{ inputs.strategy || 'fedavg' }} \
+            federation.num_rounds=${{ inputs.num_rounds || '50' }} \
+            federation.local_epochs=${{ inputs.local_epochs || '5' }} \
+            +experiment_tag=${{ inputs.experiment_tag || 'auto' }} \
+            +git_sha=${{ github.sha }}
+
+      - name: Register model in MLflow
+        run: |
+          python scripts/register_model.py \
+            --model-path ./outputs/best_model.pt \
+            --run-name "gha-${{ github.sha }}" \
+            --stage Staging
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-results-${{ github.sha }}
+          path: |
+            outputs/
+            ray_results/
+          retention-days: 30
+
+  validate-model:
+    needs: train
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Download training artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: training-results-${{ github.sha }}
+
+      - name: Run model validation
+        run: |
+          python scripts/validate_model.py \
+            --model-path outputs/best_model.pt \
+            --min-reward -5.0 \
+            --min-sla-rate 0.7 \
+            --num-eval-episodes 20
+
+      - name: Post results to PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('outputs/validation_results.json'));
+            const body = `## Model Validation Results
+            | Metric | Value | Threshold | Status |
+            |--------|-------|-----------|--------|
+            | Avg Reward | ${results.avg_reward.toFixed(2)} | -5.0 | ${results.avg_reward >= -5.0 ? '✅' : '❌'} |
+            | SLA Rate | ${results.sla_rate.toFixed(2)} | 0.70 | ${results.sla_rate >= 0.7 ? '✅' : '❌'} |
+            | Latency P99 | ${results.latency_p99.toFixed(3)}s | 1.0s | ${results.latency_p99 <= 1.0 ? '✅' : '❌'} |
+            `;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });

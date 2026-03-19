@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential git && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml setup.py requirements.txt ./
+RUN pip install --no-cache-dir -e ".[dev]"
+
+COPY src/ src/
+COPY configs/ configs/
+COPY scripts/ scripts/
+
+
+ENV RAY_OBJECT_STORE_MEMORY=2000000000
+ENV WANDB_DIR=/app/wandb
+
+ENTRYPOINT ["python", "scripts/train_federated.py"]
