@@ -1,8 +1,6 @@
 # src/mlops/metrics_exporter.py
 
-from prometheus_client import (
-    Counter, Gauge, Histogram, start_http_server
-)
+from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 
 class TrainingMetrics:

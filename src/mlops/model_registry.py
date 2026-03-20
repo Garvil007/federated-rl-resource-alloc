@@ -21,14 +21,16 @@ class ModelRegistry:
         """Register a trained federated RL model."""
         with mlflow.start_run(run_name=run_name) as run:
             # Log all hyperparameters
-            mlflow.log_params({
-                "num_clients": config["num_clients"],
-                "num_rounds": config["num_rounds"],
-                "local_epochs": config["local_epochs"],
-                "strategy": config["strategy"],
-                "learning_rate": config["training"]["lr"],
-                "mu": config.get("mu", "N/A"),
-            })
+            mlflow.log_params(
+                {
+                    "num_clients": config["num_clients"],
+                    "num_rounds": config["num_rounds"],
+                    "local_epochs": config["local_epochs"],
+                    "strategy": config["strategy"],
+                    "learning_rate": config["training"]["lr"],
+                    "mu": config.get("mu", "N/A"),
+                }
+            )
 
             # Log metrics
             for k, v in metrics.items():
@@ -45,11 +47,13 @@ class ModelRegistry:
             mlflow.log_dict(config, "federation_config.json")
 
             # Log tags
-            mlflow.set_tags({
-                "strategy": config["strategy"],
-                "num_clients": str(config["num_clients"]),
-                "environment": "resource_allocation",
-            })
+            mlflow.set_tags(
+                {
+                    "strategy": config["strategy"],
+                    "num_clients": str(config["num_clients"]),
+                    "environment": "resource_allocation",
+                }
+            )
 
             return run.info.run_id
 

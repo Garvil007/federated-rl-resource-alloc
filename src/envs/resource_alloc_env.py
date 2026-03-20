@@ -52,7 +52,7 @@ class ResourceAllocationEnv(gym.Env):
         self.seed_val = cfg.get("seed", 42)
 
         self.max_nodes = cfg.get("max_nodes", 10)
-        
+
         # Observation: [node_features(max_nodes*4) + task_features(max_pending*3)]
         obs_dim = self.max_nodes * 4 + self.max_pending * 3
         self.observation_space = spaces.Box(

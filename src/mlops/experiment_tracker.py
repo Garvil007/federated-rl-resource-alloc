@@ -16,11 +16,13 @@ class ExperimentTracker:
             group=config.get("experiment_group", "default"),
         )
         # Log git info for reproducibility
-        wandb.config.update({
-            "git_sha": repo.head.object.hexsha,
-            "git_branch": repo.active_branch.name,
-            "git_dirty": repo.is_dirty(),
-        })
+        wandb.config.update(
+            {
+                "git_sha": repo.head.object.hexsha,
+                "git_branch": repo.active_branch.name,
+                "git_dirty": repo.is_dirty(),
+            }
+        )
 
     def log_round(self, round_num: int, metrics: Dict):
         """Log federation round metrics."""
@@ -46,18 +48,24 @@ class ExperimentTracker:
         table = wandb.Table(
             columns=["client_id", "num_nodes", "arrival_rate", "cpu_range"],
             data=[
-                [i, c["num_nodes"], c["task_arrival_rate"],
-                 str(c.get("cpu_range", "default"))]
+                [
+                    i,
+                    c["num_nodes"],
+                    c["task_arrival_rate"],
+                    str(c.get("cpu_range", "default")),
+                ]
                 for i, c in enumerate(client_configs)
-            ]
+            ],
         )
         wandb.log({"client_configs": table})
 
     def log_comparison_table(self, results: Dict[str, Dict]):
         """Log comparison between strategies/baselines."""
         columns = ["method", "avg_reward", "sla_rate", "convergence_round"]
-        data = [[k, v["reward"], v["sla_rate"], v["convergence"]]
-                for k, v in results.items()]
+        data = [
+            [k, v["reward"], v["sla_rate"], v["convergence"]]
+            for k, v in results.items()
+        ]
         table = wandb.Table(columns=columns, data=data)
         wandb.log({"strategy_comparison": table})
 
