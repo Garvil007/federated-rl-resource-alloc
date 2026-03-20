@@ -15,7 +15,7 @@ parameters:
   federation.local_epochs:
     values: [3, 5]
   federation.strategy:
-    values: ["fedavg", "fedprox"]
+    values: ["fedavg", "fedprox", "fednova", "scaffold"]
   federation.mu:
     min: 0.001
     max: 0.05
@@ -29,3 +29,7 @@ parameters:
     max: 0.05
   training.gamma:
     values: [0.95, 0.99]
+  training.clip_epsilon:
+    values: [0.1, 0.2, 0.3]
+  training.gae_lambda:
+    values: [0.9, 0.95]

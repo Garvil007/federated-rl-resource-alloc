@@ -2,7 +2,7 @@ federation:
   num_clients: 5
   num_rounds: 30
   local_epochs: 3
-  strategy: "fedavg"         # or "fedprox"
+  strategy: "scaffold"       # fedavg | fedprox | fednova | scaffold
   mu: 0.01                   # FedProx proximal term
   client_sampling_rate: 1.0  # fraction of clients per round
 
@@ -50,6 +50,9 @@ client_envs:
 training:
   lr: 0.0003
   gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.2
+  ppo_epochs: 4
   obs_dim: 70   # max_nodes*4 + max_pending*3 = 10*4 + 10*3
   act_dim: 110  # (max_nodes+1) * max_pending = 11 * 10
   hidden_dim: 256
@@ -57,4 +60,4 @@ training:
   value_coeff: 0.5
   num_rounds: 30
   local_epochs: 3
-  strategy: "fedavg"
+  strategy: "scaffold"
