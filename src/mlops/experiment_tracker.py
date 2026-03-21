@@ -1,12 +1,12 @@
 import wandb
-from typing import Dict
+from typing import Dict, Optional
 import git
 
 
 class ExperimentTracker:
     """Unified experiment tracking with W&B."""
 
-    def __init__(self, project: str, config: Dict, tags: list = None):
+    def __init__(self, project: str, config: Dict, tags: Optional[list] = None):
         repo = git.Repo(search_parent_directories=True)
         self.run = wandb.init(
             project=project,
@@ -33,7 +33,7 @@ class ExperimentTracker:
         prefixed = {f"client_{client_id}/{k}": v for k, v in metrics.items()}
         wandb.log({"round": round_num, **prefixed})
 
-    def log_model(self, model_path: str, aliases: list = None):
+    def log_model(self, model_path: str, aliases: Optional[list] = None):
         """Log trained model as W&B artifact."""
         artifact = wandb.Artifact(
             name="fed-rl-model",
