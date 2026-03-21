@@ -2,12 +2,11 @@ federation:
   num_clients: 5
   num_rounds: 30
   local_epochs: 3
-  strategy: "scaffold"       # fedavg | fedprox | fednova | scaffold
-  mu: 0.01                   # FedProx proximal term
-  client_sampling_rate: 1.0  # fraction of clients per round
+  strategy: "scaffold"      
+  mu: 0.01                  
+  client_sampling_rate: 1.0 
 
 client_envs:
-  # Client 0: Small edge site, low traffic
   - num_nodes: 3
     task_arrival_rate: 1.5
     cpu_range: [30, 80]
