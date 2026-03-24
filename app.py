@@ -464,6 +464,7 @@ elif page == "🌍 Environment Visualizer":
 
     with col2:
         st.markdown("### 🎯 Agent's Action (Simulated)")
+        actions = []
         if tasks:
             actions = [rng.integers(0, client.num_nodes + 1) for _ in tasks]
             action_df = pd.DataFrame([
