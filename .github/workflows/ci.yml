@@ -96,9 +96,10 @@ jobs:
               {'lr': 3e-4, 'workers': 0, 'gpus': 0, 'batch_size': 200,
                'minibatch': 100, 'num_sgd_iter': 2}
           )
-          algo = cfg.build()
+          algo = cfg.build_algo()
           result = algo.train()
-          print(f'Smoke test reward: {result[\"episode_reward_mean\"]}')
+          reward = result.get('env_runners', result).get('episode_reward_mean', 'N/A')
+          print(f'Smoke test reward: {reward}')
           algo.stop()
           ray.shutdown()
           print('Training smoke test PASSED')
