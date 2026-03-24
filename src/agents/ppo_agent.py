@@ -24,7 +24,7 @@ def build_ppo_config(env_cfg: dict, train_cfg: dict) -> PPOConfig:
             lambda_=train_cfg.get("gae_lambda", 0.95),
             clip_param=train_cfg.get("clip_param", 0.2),
             num_sgd_iter=train_cfg.get("num_sgd_iter", 10),
-            sgd_minibatch_size=train_cfg.get("minibatch", 256),
+            minibatch_size=train_cfg.get("minibatch", 256),
             train_batch_size=train_cfg.get("batch_size", 4000),
             entropy_coeff=train_cfg.get("entropy_coeff", 0.01),
             vf_loss_coeff=train_cfg.get("vf_loss_coeff", 0.5),
@@ -33,9 +33,8 @@ def build_ppo_config(env_cfg: dict, train_cfg: dict) -> PPOConfig:
                 "fcnet_activation": "relu",
             },
         )
-        .rollouts(
-            num_rollout_workers=train_cfg.get("workers", 4),
-            rollout_fragment_length="auto",
+        .env_runners(
+            num_env_runners=train_cfg.get("workers", 4),
         )
         .resources(
             num_gpus=train_cfg.get("gpus", 0),
