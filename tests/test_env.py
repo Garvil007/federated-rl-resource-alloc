@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium.utils.env_checker import check_env
-
+import src.envs  # registers the environment
 
 def test_env_gymnasium_compliance():
     """Verify env passes Gymnasium API checker."""
