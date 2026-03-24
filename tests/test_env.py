@@ -3,6 +3,7 @@ import numpy as np
 from gymnasium.utils.env_checker import check_env
 import src.envs  # noqa: F401 (registers the environment)
 
+
 def test_env_gymnasium_compliance():
     """Verify env passes Gymnasium API checker."""
     env = gym.make("ResourceAllocation-v0")
