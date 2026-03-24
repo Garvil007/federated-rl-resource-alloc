@@ -42,7 +42,7 @@ def test_env_heterogeneous_configs():
     cfg2 = {"num_nodes": 8, "task_arrival_rate": 5.0}
     env1 = gym.make("ResourceAllocation-v0", config=cfg1)
     env2 = gym.make("ResourceAllocation-v0", config=cfg2)
-    assert env1.num_nodes != env2.num_nodes
+    assert env1.unwrapped.num_nodes != env2.unwrapped.num_nodes
 
 
 def test_env_deterministic_with_seed():
