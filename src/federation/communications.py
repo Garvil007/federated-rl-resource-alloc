@@ -51,14 +51,14 @@ except ImportError:
 
 try:
     import grpc
-    from concurrent import futures
+    from concurrent import futures  # noqa: F401
 
     HAS_GRPC = True
 except ImportError:
     HAS_GRPC = False
 
 try:
-    from prometheus_client import Counter, Histogram, Gauge
+    from prometheus_client import Counter, Histogram, Gauge  # noqa: F401
 
     HAS_PROMETHEUS = True
 except ImportError:
