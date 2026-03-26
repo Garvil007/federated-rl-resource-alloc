@@ -34,7 +34,8 @@ st.set_page_config(
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  CUSTOM CSS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-st.markdown("""
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
 
@@ -103,12 +104,15 @@ st.markdown("""
         background: linear-gradient(180deg, #0d1220 0%, #0a0e17 100%);
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  SIMULATION CLASSES (mirrors the real project)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 @dataclass
 class EdgeNode:
@@ -123,11 +127,16 @@ class EdgeNode:
     energy_per_cpu: float = 0.5
 
     @property
-    def cpu_util(self): return self.cpu_used / self.cpu_capacity
+    def cpu_util(self):
+        return self.cpu_used / self.cpu_capacity
+
     @property
-    def mem_util(self): return self.mem_used / self.mem_capacity
+    def mem_util(self):
+        return self.mem_used / self.mem_capacity
+
     @property
-    def bw_util(self): return self.bw_used / self.bw_capacity
+    def bw_util(self):
+        return self.bw_used / self.bw_capacity
 
 
 @dataclass
@@ -151,11 +160,11 @@ class ClientConfig:
 
 # Default client configurations (heterogeneous)
 DEFAULT_CLIENTS = [
-    ClientConfig(0, "Small Edge Site",     3,  1.5, (30, 80),   (16, 32),  "#34d399"),
-    ClientConfig(1, "Large Data Center",   10, 8.0, (100, 200), (64, 256), "#818cf8"),
-    ClientConfig(2, "Mobile Edge",         4,  5.0, (20, 60),   (8, 16),   "#fbbf24"),
-    ClientConfig(3, "Industrial IoT",      6,  3.0, (50, 100),  (32, 64),  "#f87171"),
-    ClientConfig(4, "Rural Edge",          2,  0.8, (20, 50),   (8, 16),   "#a78bfa"),
+    ClientConfig(0, "Small Edge Site", 3, 1.5, (30, 80), (16, 32), "#34d399"),
+    ClientConfig(1, "Large Data Center", 10, 8.0, (100, 200), (64, 256), "#818cf8"),
+    ClientConfig(2, "Mobile Edge", 4, 5.0, (20, 60), (8, 16), "#fbbf24"),
+    ClientConfig(3, "Industrial IoT", 6, 3.0, (50, 100), (32, 64), "#f87171"),
+    ClientConfig(4, "Rural Edge", 2, 0.8, (20, 50), (8, 16), "#a78bfa"),
 ]
 
 
@@ -165,15 +174,18 @@ def simulate_environment_step(nodes: List[EdgeNode], rng: np.random.Generator):
         # Fluctuate utilization
         node.cpu_used = np.clip(
             node.cpu_used + rng.normal(0, node.cpu_capacity * 0.05),
-            0, node.cpu_capacity * 0.95
+            0,
+            node.cpu_capacity * 0.95,
         )
         node.mem_used = np.clip(
             node.mem_used + rng.normal(0, node.mem_capacity * 0.03),
-            0, node.mem_capacity * 0.95
+            0,
+            node.mem_capacity * 0.95,
         )
         node.bw_used = np.clip(
             node.bw_used + rng.normal(0, node.bw_capacity * 0.04),
-            0, node.bw_capacity * 0.95
+            0,
+            node.bw_capacity * 0.95,
         )
         node.queue_len = max(0, node.queue_len + rng.integers(-2, 4))
     return nodes
@@ -190,7 +202,9 @@ def simulate_federation_round(
     # Rewards improve over time with noise
     improvement = 0.5 * math.log(round_num + 1)
     base_reward = -15 + improvement + rng.normal(0, 2)
-    global_reward = max(prev_reward * 0.7 + base_reward * 0.3, prev_reward + rng.normal(0.3, 0.5))
+    global_reward = max(
+        prev_reward * 0.7 + base_reward * 0.3, prev_reward + rng.normal(0.3, 0.5)
+    )
 
     client_rewards = []
     client_losses = []
@@ -199,7 +213,9 @@ def simulate_federation_round(
         cr = global_reward + rng.normal(0, 3)  # Client-specific noise
         client_rewards.append(cr)
         client_losses.append(max(0.01, 2.0 - 0.015 * round_num + rng.normal(0, 0.2)))
-        client_sla_rates.append(np.clip(0.4 + 0.005 * round_num + rng.normal(0, 0.05), 0, 1))
+        client_sla_rates.append(
+            np.clip(0.4 + 0.005 * round_num + rng.normal(0, 0.05), 0, 1)
+        )
 
     divergence = max(0, 5.0 - 0.03 * round_num + rng.normal(0, 0.5))
     if strategy == "FedProx":
@@ -217,18 +233,24 @@ def simulate_federation_round(
     }
 
 
-def simulate_serving_metrics(rng: np.random.Generator, n_points: int = 100) -> pd.DataFrame:
+def simulate_serving_metrics(
+    rng: np.random.Generator, n_points: int = 100
+) -> pd.DataFrame:
     """Simulate model serving metrics."""
     timestamps = pd.date_range("2026-01-01", periods=n_points, freq="1min")
     latencies = np.abs(rng.normal(0.015, 0.008, n_points))
-    throughput = 100 + rng.normal(0, 15, n_points).cumsum() * 0.1 + np.arange(n_points) * 0.5
+    throughput = (
+        100 + rng.normal(0, 15, n_points).cumsum() * 0.1 + np.arange(n_points) * 0.5
+    )
     errors = rng.poisson(0.5, n_points)
-    return pd.DataFrame({
-        "timestamp": timestamps,
-        "latency_ms": latencies * 1000,
-        "throughput_rps": np.clip(throughput, 10, 500),
-        "errors": errors,
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "latency_ms": latencies * 1000,
+            "throughput_rps": np.clip(throughput, 10, 500),
+            "errors": errors,
+        }
+    )
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -304,42 +326,94 @@ if page == "🏠 Project Overview":
     # Metric cards
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">6</div>
             <div class="metric-label">Architecture Layers</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""",
+            unsafe_allow_html=True,
+        )
     with c2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">5+</div>
             <div class="metric-label">Edge Clients</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""",
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">4</div>
             <div class="metric-label">CI/CD Pipelines</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""",
+            unsafe_allow_html=True,
+        )
     with c4:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="metric-card">
             <div class="metric-value">9</div>
             <div class="metric-label">Major Components</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""",
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
     st.markdown("### 📋 How The Project Works (End-to-End)")
 
     steps = [
-        ("1️⃣", "Custom Gym Environment", "Simulates edge computing with N nodes, task arrivals, SLA deadlines", "status-complete"),
-        ("2️⃣", "PPO Agent (Ray/RLlib)", "Neural network learns to allocate tasks to nodes optimally", "status-complete"),
-        ("3️⃣", "Federated Training Loop", "K clients train locally, server aggregates via FedAvg/FedProx", "status-running"),
-        ("4️⃣", "W&B Experiment Tracking", "Live dashboards, per-client metrics, hyperparameter sweeps", "status-running"),
-        ("5️⃣", "MLflow Model Registry", "Version models, promote Staging → Production", "status-waiting"),
-        ("6️⃣", "Prometheus + Grafana", "Real-time monitoring, latency histograms, alert rules", "status-waiting"),
-        ("7️⃣", "GitHub Actions CI/CD", "Auto lint/test/train/deploy on every push", "status-waiting"),
-        ("8️⃣", "Docker Deployment", "Containerized serving with health checks", "status-waiting"),
+        (
+            "1️⃣",
+            "Custom Gym Environment",
+            "Simulates edge computing with N nodes, task arrivals, SLA deadlines",
+            "status-complete",
+        ),
+        (
+            "2️⃣",
+            "PPO Agent (Ray/RLlib)",
+            "Neural network learns to allocate tasks to nodes optimally",
+            "status-complete",
+        ),
+        (
+            "3️⃣",
+            "Federated Training Loop",
+            "K clients train locally, server aggregates via FedAvg/FedProx",
+            "status-running",
+        ),
+        (
+            "4️⃣",
+            "W&B Experiment Tracking",
+            "Live dashboards, per-client metrics, hyperparameter sweeps",
+            "status-running",
+        ),
+        (
+            "5️⃣",
+            "MLflow Model Registry",
+            "Version models, promote Staging → Production",
+            "status-waiting",
+        ),
+        (
+            "6️⃣",
+            "Prometheus + Grafana",
+            "Real-time monitoring, latency histograms, alert rules",
+            "status-waiting",
+        ),
+        (
+            "7️⃣",
+            "GitHub Actions CI/CD",
+            "Auto lint/test/train/deploy on every push",
+            "status-waiting",
+        ),
+        (
+            "8️⃣",
+            "Docker Deployment",
+            "Containerized serving with health checks",
+            "status-waiting",
+        ),
     ]
 
     for emoji, title, desc, status in steps:
@@ -365,7 +439,9 @@ elif page == "🌍 Environment Visualizer":
     client_idx = st.selectbox(
         "Select Edge Client to Visualize",
         range(min(num_clients, len(DEFAULT_CLIENTS))),
-        format_func=lambda i: f"Client {i}: {DEFAULT_CLIENTS[i].name} ({DEFAULT_CLIENTS[i].num_nodes} nodes, λ={DEFAULT_CLIENTS[i].task_arrival_rate})"
+        format_func=lambda i: (
+            f"Client {i}: {DEFAULT_CLIENTS[i].name} ({DEFAULT_CLIENTS[i].num_nodes} nodes, λ={DEFAULT_CLIENTS[i].task_arrival_rate})"
+        ),
     )
 
     client = DEFAULT_CLIENTS[client_idx]
@@ -401,18 +477,20 @@ elif page == "🌍 Environment Visualizer":
     # ── Node Status ──
     st.markdown("### 🖥️ Edge Nodes — Current State")
 
-    node_df = pd.DataFrame([
-        {
-            "Node": f"Node {n.node_id}",
-            "CPU Util (%)": round(n.cpu_util * 100, 1),
-            "Mem Util (%)": round(n.mem_util * 100, 1),
-            "BW Util (%)": round(n.bw_util * 100, 1),
-            "Queue": n.queue_len,
-            "CPU Cap": f"{n.cpu_capacity:.0f}",
-            "Mem Cap": f"{n.mem_capacity:.0f} GB",
-        }
-        for n in nodes
-    ])
+    node_df = pd.DataFrame(
+        [
+            {
+                "Node": f"Node {n.node_id}",
+                "CPU Util (%)": round(n.cpu_util * 100, 1),
+                "Mem Util (%)": round(n.mem_util * 100, 1),
+                "BW Util (%)": round(n.bw_util * 100, 1),
+                "Queue": n.queue_len,
+                "CPU Cap": f"{n.cpu_capacity:.0f}",
+                "Mem Cap": f"{n.mem_capacity:.0f} GB",
+            }
+            for n in nodes
+        ]
+    )
 
     # Heatmap of utilization
     fig_heat = go.Figure()
@@ -422,17 +500,25 @@ elif page == "🌍 Environment Visualizer":
         [n.mem_util * 100 for n in nodes],
         [n.bw_util * 100 for n in nodes],
     ]
-    fig_heat = go.Figure(data=go.Heatmap(
-        z=z_data,
-        x=[f"Node {n.node_id}" for n in nodes],
-        y=metrics_names,
-        colorscale=[[0, "#0d1117"], [0.5, "#2196F3"], [0.8, "#ff9800"], [1, "#f44336"]],
-        zmin=0, zmax=100,
-        text=[[f"{v:.0f}%" for v in row] for row in z_data],
-        texttemplate="%{text}",
-        textfont={"size": 14, "color": "white"},
-        hovertemplate="Node: %{x}<br>Metric: %{y}<br>Utilization: %{z:.1f}%<extra></extra>",
-    ))
+    fig_heat = go.Figure(
+        data=go.Heatmap(
+            z=z_data,
+            x=[f"Node {n.node_id}" for n in nodes],
+            y=metrics_names,
+            colorscale=[
+                [0, "#0d1117"],
+                [0.5, "#2196F3"],
+                [0.8, "#ff9800"],
+                [1, "#f44336"],
+            ],
+            zmin=0,
+            zmax=100,
+            text=[[f"{v:.0f}%" for v in row] for row in z_data],
+            texttemplate="%{text}",
+            textfont={"size": 14, "color": "white"},
+            hovertemplate="Node: %{x}<br>Metric: %{y}<br>Utilization: %{z:.1f}%<extra></extra>",
+        )
+    )
     fig_heat.update_layout(
         title="Node Utilization Heatmap",
         height=250,
@@ -449,15 +535,17 @@ elif page == "🌍 Environment Visualizer":
     with col1:
         st.markdown("### 📋 Pending Tasks")
         if tasks:
-            task_df = pd.DataFrame([
-                {
-                    "Task": f"Task {i}",
-                    "CPU Required": f"{t.cpu_req:.1f}",
-                    "Memory Required": f"{t.mem_req:.1f} GB",
-                    "Deadline": f"{t.deadline:.1f}s",
-                }
-                for i, t in enumerate(tasks)
-            ])
+            task_df = pd.DataFrame(
+                [
+                    {
+                        "Task": f"Task {i}",
+                        "CPU Required": f"{t.cpu_req:.1f}",
+                        "Memory Required": f"{t.mem_req:.1f} GB",
+                        "Deadline": f"{t.deadline:.1f}s",
+                    }
+                    for i, t in enumerate(tasks)
+                ]
+            )
             st.dataframe(task_df, use_container_width=True, hide_index=True)
         else:
             st.info("No pending tasks this timestep")
@@ -467,20 +555,32 @@ elif page == "🌍 Environment Visualizer":
         actions = []
         if tasks:
             actions = [rng.integers(0, client.num_nodes + 1) for _ in tasks]
-            action_df = pd.DataFrame([
-                {
-                    "Task": f"Task {i}",
-                    "Decision": f"→ Node {a}" if a < client.num_nodes else "❌ REJECT",
-                    "Reason": "Capacity available" if a < client.num_nodes else "All nodes overloaded",
-                }
-                for i, a in enumerate(actions)
-            ])
+            action_df = pd.DataFrame(
+                [
+                    {
+                        "Task": f"Task {i}",
+                        "Decision": f"→ Node {a}"
+                        if a < client.num_nodes
+                        else "❌ REJECT",
+                        "Reason": "Capacity available"
+                        if a < client.num_nodes
+                        else "All nodes overloaded",
+                    }
+                    for i, a in enumerate(actions)
+                ]
+            )
             st.dataframe(action_df, use_container_width=True, hide_index=True)
 
     # ── Reward Breakdown ──
     st.markdown("### 💰 Reward Computation (This Timestep)")
     fig_rew = go.Figure()
-    components = ["Throughput (+1.0)", "SLA Bonus (+2.0)", "Latency Penalty", "Energy Penalty", "Drop Penalty"]
+    components = [
+        "Throughput (+1.0)",
+        "SLA Bonus (+2.0)",
+        "Latency Penalty",
+        "Energy Penalty",
+        "Drop Penalty",
+    ]
     values = [
         len([a for a in actions if a < client.num_nodes]) * 1.0,
         len([a for a in actions if a < client.num_nodes]) * 2.0 * 0.7,
@@ -489,12 +589,16 @@ elif page == "🌍 Environment Visualizer":
         -len([a for a in actions if a >= client.num_nodes]) * 3.0,
     ]
     colors = ["#34d399", "#818cf8", "#f87171", "#fbbf24", "#ef4444"]
-    fig_rew = go.Figure(go.Bar(
-        x=values, y=components, orientation='h',
-        marker_color=colors,
-        text=[f"{v:+.2f}" for v in values],
-        textposition="outside",
-    ))
+    fig_rew = go.Figure(
+        go.Bar(
+            x=values,
+            y=components,
+            orientation="h",
+            marker_color=colors,
+            text=[f"{v:+.2f}" for v in values],
+            textposition="outside",
+        )
+    )
     fig_rew.update_layout(
         title=f"Total Reward: {sum(values):+.2f}",
         height=280,
@@ -512,12 +616,16 @@ elif page == "🌍 Environment Visualizer":
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 elif page == "🔄 Federation Simulator":
     st.markdown("# 🔄 Federated Training Simulator")
-    st.markdown(f"*{strategy} with {num_clients} clients × {num_rounds} rounds × {local_epochs} local epochs*")
+    st.markdown(
+        f"*{strategy} with {num_clients} clients × {num_rounds} rounds × {local_epochs} local epochs*"
+    )
     st.markdown("---")
 
     col_btn1, col_btn2, col_btn3 = st.columns(3)
     with col_btn1:
-        run_sim = st.button("▶️ Run Full Simulation", type="primary", use_container_width=True)
+        run_sim = st.button(
+            "▶️ Run Full Simulation", type="primary", use_container_width=True
+        )
     with col_btn2:
         step_sim = st.button("⏭️ Step One Round", use_container_width=True)
     with col_btn3:
@@ -534,10 +642,15 @@ elif page == "🔄 Federation Simulator":
         prev_reward = -15.0
 
         for r in range(num_rounds):
-            result = simulate_federation_round(r, num_clients, strategy, rng, prev_reward)
+            result = simulate_federation_round(
+                r, num_clients, strategy, rng, prev_reward
+            )
             st.session_state.federation_history.append(result)
             prev_reward = result["global_reward"]
-            progress.progress((r + 1) / num_rounds, text=f"Round {r+1}/{num_rounds} | Reward: {prev_reward:.2f}")
+            progress.progress(
+                (r + 1) / num_rounds,
+                text=f"Round {r + 1}/{num_rounds} | Reward: {prev_reward:.2f}",
+            )
 
         st.session_state.current_round = num_rounds
         progress.empty()
@@ -545,7 +658,11 @@ elif page == "🔄 Federation Simulator":
 
     if step_sim:
         r = st.session_state.current_round
-        prev = st.session_state.federation_history[-1]["global_reward"] if st.session_state.federation_history else -15.0
+        prev = (
+            st.session_state.federation_history[-1]["global_reward"]
+            if st.session_state.federation_history
+            else -15.0
+        )
         result = simulate_federation_round(r, num_clients, strategy, rng, prev)
         st.session_state.federation_history.append(result)
         st.session_state.current_round += 1
@@ -560,11 +677,21 @@ elif page == "🔄 Federation Simulator":
         latest = history[-1]
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Round", f"{latest['round']}/{num_rounds}", delta=f"+1")
-        m2.metric("Global Reward", f"{latest['global_reward']:.2f}",
-                  delta=f"{latest['global_reward'] - history[-2]['global_reward']:.2f}" if len(history) > 1 else None)
-        m3.metric("Weight Divergence", f"{latest['weight_divergence']:.3f}",
-                  delta=f"{latest['weight_divergence'] - history[-2]['weight_divergence']:.3f}" if len(history) > 1 else None,
-                  delta_color="inverse")
+        m2.metric(
+            "Global Reward",
+            f"{latest['global_reward']:.2f}",
+            delta=f"{latest['global_reward'] - history[-2]['global_reward']:.2f}"
+            if len(history) > 1
+            else None,
+        )
+        m3.metric(
+            "Weight Divergence",
+            f"{latest['weight_divergence']:.3f}",
+            delta=f"{latest['weight_divergence'] - history[-2]['weight_divergence']:.3f}"
+            if len(history) > 1
+            else None,
+            delta_color="inverse",
+        )
         m4.metric("Comm. Cost", f"{latest['communication_cost_mb']:.1f} MB")
 
         # Global reward over rounds
@@ -572,24 +699,33 @@ elif page == "🔄 Federation Simulator":
         rounds = [h["round"] for h in history]
         rewards = [h["global_reward"] for h in history]
 
-        fig_reward.add_trace(go.Scatter(
-            x=rounds, y=rewards,
-            mode="lines+markers",
-            name="Global Avg Reward",
-            line=dict(color="#818cf8", width=3),
-            marker=dict(size=4),
-        ))
+        fig_reward.add_trace(
+            go.Scatter(
+                x=rounds,
+                y=rewards,
+                mode="lines+markers",
+                name="Global Avg Reward",
+                line=dict(color="#818cf8", width=3),
+                marker=dict(size=4),
+            )
+        )
 
         # Per-client rewards
         for c in range(num_clients):
-            c_rewards = [h["client_rewards"][c] if c < len(h["client_rewards"]) else 0 for h in history]
-            fig_reward.add_trace(go.Scatter(
-                x=rounds, y=c_rewards,
-                mode="lines",
-                name=f"Client {c}",
-                line=dict(width=1, dash="dot"),
-                opacity=0.5,
-            ))
+            c_rewards = [
+                h["client_rewards"][c] if c < len(h["client_rewards"]) else 0
+                for h in history
+            ]
+            fig_reward.add_trace(
+                go.Scatter(
+                    x=rounds,
+                    y=c_rewards,
+                    mode="lines",
+                    name=f"Client {c}",
+                    line=dict(width=1, dash="dot"),
+                    opacity=0.5,
+                )
+            )
 
         fig_reward.update_layout(
             title="Reward Convergence — Global vs Per-Client",
@@ -610,20 +746,30 @@ elif page == "🔄 Federation Simulator":
             # Weight divergence
             fig_div = go.Figure()
             divs = [h["weight_divergence"] for h in history]
-            fig_div.add_trace(go.Scatter(
-                x=rounds, y=divs,
-                fill="tozeroy",
-                fillcolor="rgba(249, 115, 22, 0.15)",
-                line=dict(color="#f97316", width=2),
-                name="Weight Divergence",
-            ))
-            fig_div.add_hline(y=5.0, line_dash="dash", line_color="#ef4444",
-                             annotation_text="Alert Threshold")
+            fig_div.add_trace(
+                go.Scatter(
+                    x=rounds,
+                    y=divs,
+                    fill="tozeroy",
+                    fillcolor="rgba(249, 115, 22, 0.15)",
+                    line=dict(color="#f97316", width=2),
+                    name="Weight Divergence",
+                )
+            )
+            fig_div.add_hline(
+                y=5.0,
+                line_dash="dash",
+                line_color="#ef4444",
+                annotation_text="Alert Threshold",
+            )
             fig_div.update_layout(
                 title="Client Weight Divergence",
-                xaxis_title="Round", yaxis_title="L2 Distance",
-                height=350, template="plotly_dark",
-                paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+                xaxis_title="Round",
+                yaxis_title="L2 Distance",
+                height=350,
+                template="plotly_dark",
+                paper_bgcolor="#0a0e17",
+                plot_bgcolor="#0d1117",
             )
             st.plotly_chart(fig_div, use_container_width=True)
 
@@ -631,20 +777,35 @@ elif page == "🔄 Federation Simulator":
             # SLA rates per client
             fig_sla = go.Figure()
             for c in range(num_clients):
-                sla_rates = [h["client_sla_rates"][c] if c < len(h["client_sla_rates"]) else 0 for h in history]
-                fig_sla.add_trace(go.Scatter(
-                    x=rounds, y=sla_rates,
-                    mode="lines",
-                    name=f"Client {c}: {DEFAULT_CLIENTS[c].name}" if c < len(DEFAULT_CLIENTS) else f"Client {c}",
-                    line=dict(width=2),
-                ))
-            fig_sla.add_hline(y=0.7, line_dash="dash", line_color="#34d399",
-                             annotation_text="Target SLA 70%")
+                sla_rates = [
+                    h["client_sla_rates"][c] if c < len(h["client_sla_rates"]) else 0
+                    for h in history
+                ]
+                fig_sla.add_trace(
+                    go.Scatter(
+                        x=rounds,
+                        y=sla_rates,
+                        mode="lines",
+                        name=f"Client {c}: {DEFAULT_CLIENTS[c].name}"
+                        if c < len(DEFAULT_CLIENTS)
+                        else f"Client {c}",
+                        line=dict(width=2),
+                    )
+                )
+            fig_sla.add_hline(
+                y=0.7,
+                line_dash="dash",
+                line_color="#34d399",
+                annotation_text="Target SLA 70%",
+            )
             fig_sla.update_layout(
                 title="SLA Compliance Rate by Client",
-                xaxis_title="Round", yaxis_title="SLA Rate",
-                height=350, template="plotly_dark",
-                paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+                xaxis_title="Round",
+                yaxis_title="SLA Rate",
+                height=350,
+                template="plotly_dark",
+                paper_bgcolor="#0a0e17",
+                plot_bgcolor="#0d1117",
                 legend=dict(font=dict(size=9)),
             )
             st.plotly_chart(fig_sla, use_container_width=True)
@@ -655,31 +816,47 @@ elif page == "🔄 Federation Simulator":
         with col3:
             fig_loss = go.Figure()
             for c in range(num_clients):
-                losses = [h["client_losses"][c] if c < len(h["client_losses"]) else 0 for h in history]
-                fig_loss.add_trace(go.Scatter(
-                    x=rounds, y=losses, mode="lines", name=f"Client {c}",
-                    line=dict(width=1.5),
-                ))
+                losses = [
+                    h["client_losses"][c] if c < len(h["client_losses"]) else 0
+                    for h in history
+                ]
+                fig_loss.add_trace(
+                    go.Scatter(
+                        x=rounds,
+                        y=losses,
+                        mode="lines",
+                        name=f"Client {c}",
+                        line=dict(width=1.5),
+                    )
+                )
             fig_loss.update_layout(
                 title="Training Loss by Client",
-                xaxis_title="Round", yaxis_title="Policy Loss",
-                height=300, template="plotly_dark",
-                paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+                xaxis_title="Round",
+                yaxis_title="Policy Loss",
+                height=300,
+                template="plotly_dark",
+                paper_bgcolor="#0a0e17",
+                plot_bgcolor="#0d1117",
             )
             st.plotly_chart(fig_loss, use_container_width=True)
 
         with col4:
             durations = [h["round_duration"] for h in history]
-            fig_dur = go.Figure(go.Histogram(
-                x=durations,
-                nbinsx=20,
-                marker_color="#818cf8",
-            ))
+            fig_dur = go.Figure(
+                go.Histogram(
+                    x=durations,
+                    nbinsx=20,
+                    marker_color="#818cf8",
+                )
+            )
             fig_dur.update_layout(
                 title="Round Duration Distribution",
-                xaxis_title="Duration (seconds)", yaxis_title="Count",
-                height=300, template="plotly_dark",
-                paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+                xaxis_title="Duration (seconds)",
+                yaxis_title="Count",
+                height=300,
+                template="plotly_dark",
+                paper_bgcolor="#0a0e17",
+                plot_bgcolor="#0d1117",
             )
             st.plotly_chart(fig_dur, use_container_width=True)
 
@@ -712,18 +889,38 @@ elif page == "📊 Training Analytics":
     central_rewards = gen_curve(-15, 6.0, 0.8, rng)
 
     fig_comp = go.Figure()
-    fig_comp.add_trace(go.Scatter(x=list(rounds_range), y=fedavg_rewards, name="FedAvg (5 clients)",
-                                  line=dict(color="#818cf8", width=3)))
-    fig_comp.add_trace(go.Scatter(x=list(rounds_range), y=fedprox_rewards, name="FedProx (5 clients, μ=0.01)",
-                                  line=dict(color="#34d399", width=3)))
-    fig_comp.add_trace(go.Scatter(x=list(rounds_range), y=central_rewards, name="Centralized Baseline",
-                                  line=dict(color="#fbbf24", width=3, dash="dash")))
+    fig_comp.add_trace(
+        go.Scatter(
+            x=list(rounds_range),
+            y=fedavg_rewards,
+            name="FedAvg (5 clients)",
+            line=dict(color="#818cf8", width=3),
+        )
+    )
+    fig_comp.add_trace(
+        go.Scatter(
+            x=list(rounds_range),
+            y=fedprox_rewards,
+            name="FedProx (5 clients, μ=0.01)",
+            line=dict(color="#34d399", width=3),
+        )
+    )
+    fig_comp.add_trace(
+        go.Scatter(
+            x=list(rounds_range),
+            y=central_rewards,
+            name="Centralized Baseline",
+            line=dict(color="#fbbf24", width=3, dash="dash"),
+        )
+    )
     fig_comp.update_layout(
         title="Strategy Comparison: FedAvg vs FedProx vs Centralized",
         xaxis_title="Training Round / Iteration",
         yaxis_title="Average Episode Reward",
-        height=450, template="plotly_dark",
-        paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+        height=450,
+        template="plotly_dark",
+        paper_bgcolor="#0a0e17",
+        plot_bgcolor="#0d1117",
         legend=dict(orientation="h", y=-0.12),
     )
     st.plotly_chart(fig_comp, use_container_width=True)
@@ -737,27 +934,36 @@ elif page == "📊 Training Analytics":
             for strat in ["FedAvg", "FedProx"]:
                 reward = -5 + np.log10(lr + 1e-6) * 2 + le * 0.3
                 reward += (2.0 if strat == "FedProx" else 0) + rng.normal(0, 1)
-                sweep_data.append({
-                    "Learning Rate": lr,
-                    "Local Epochs": le,
-                    "Strategy": strat,
-                    "Final Reward": round(reward, 2),
-                    "SLA Rate": round(np.clip(0.5 + reward * 0.02 + rng.normal(0, 0.03), 0, 1), 3),
-                })
+                sweep_data.append(
+                    {
+                        "Learning Rate": lr,
+                        "Local Epochs": le,
+                        "Strategy": strat,
+                        "Final Reward": round(reward, 2),
+                        "SLA Rate": round(
+                            np.clip(0.5 + reward * 0.02 + rng.normal(0, 0.03), 0, 1), 3
+                        ),
+                    }
+                )
 
     sweep_df = pd.DataFrame(sweep_data)
 
     fig_sweep = px.scatter(
-        sweep_df, x="Learning Rate", y="Final Reward",
-        color="Strategy", size="Local Epochs",
+        sweep_df,
+        x="Learning Rate",
+        y="Final Reward",
+        color="Strategy",
+        size="Local Epochs",
         hover_data=["SLA Rate"],
         color_discrete_map={"FedAvg": "#818cf8", "FedProx": "#34d399"},
         log_x=True,
         title="Sweep: Learning Rate vs Final Reward (size = Local Epochs)",
     )
     fig_sweep.update_layout(
-        height=400, template="plotly_dark",
-        paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+        height=400,
+        template="plotly_dark",
+        paper_bgcolor="#0a0e17",
+        plot_bgcolor="#0d1117",
     )
     st.plotly_chart(fig_sweep, use_container_width=True)
 
@@ -780,39 +986,69 @@ elif page == "🚀 Model Serving Monitor":
 
     # Live metrics
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Throughput", f"{serving_df['throughput_rps'].iloc[-1]:.0f} req/s",
-              delta=f"{serving_df['throughput_rps'].iloc[-1] - serving_df['throughput_rps'].iloc[-2]:.1f}")
+    m1.metric(
+        "Throughput",
+        f"{serving_df['throughput_rps'].iloc[-1]:.0f} req/s",
+        delta=f"{serving_df['throughput_rps'].iloc[-1] - serving_df['throughput_rps'].iloc[-2]:.1f}",
+    )
     m2.metric("P50 Latency", f"{serving_df['latency_ms'].quantile(0.5):.1f} ms")
-    m3.metric("P99 Latency", f"{serving_df['latency_ms'].quantile(0.99):.1f} ms",
-              delta_color="inverse")
-    m4.metric("Error Rate", f"{serving_df['errors'].sum() / len(serving_df):.2%}",
-              delta_color="inverse")
+    m3.metric(
+        "P99 Latency",
+        f"{serving_df['latency_ms'].quantile(0.99):.1f} ms",
+        delta_color="inverse",
+    )
+    m4.metric(
+        "Error Rate",
+        f"{serving_df['errors'].sum() / len(serving_df):.2%}",
+        delta_color="inverse",
+    )
 
     # Throughput + Latency
     fig_serve = make_subplots(
-        rows=2, cols=1,
+        rows=2,
+        cols=1,
         subplot_titles=("Prediction Throughput (req/s)", "Prediction Latency (ms)"),
         vertical_spacing=0.12,
     )
 
     fig_serve.add_trace(
-        go.Scatter(x=serving_df["timestamp"], y=serving_df["throughput_rps"],
-                   fill="tozeroy", fillcolor="rgba(129, 140, 248, 0.15)",
-                   line=dict(color="#818cf8", width=2), name="Throughput"),
-        row=1, col=1,
+        go.Scatter(
+            x=serving_df["timestamp"],
+            y=serving_df["throughput_rps"],
+            fill="tozeroy",
+            fillcolor="rgba(129, 140, 248, 0.15)",
+            line=dict(color="#818cf8", width=2),
+            name="Throughput",
+        ),
+        row=1,
+        col=1,
     )
 
     fig_serve.add_trace(
-        go.Scatter(x=serving_df["timestamp"], y=serving_df["latency_ms"],
-                   mode="markers", marker=dict(size=3, color="#34d399"), name="Latency"),
-        row=2, col=1,
+        go.Scatter(
+            x=serving_df["timestamp"],
+            y=serving_df["latency_ms"],
+            mode="markers",
+            marker=dict(size=3, color="#34d399"),
+            name="Latency",
+        ),
+        row=2,
+        col=1,
     )
-    fig_serve.add_hline(y=50, line_dash="dash", line_color="#f87171",
-                        annotation_text="SLA: 50ms", row=2, col=1)
+    fig_serve.add_hline(
+        y=50,
+        line_dash="dash",
+        line_color="#f87171",
+        annotation_text="SLA: 50ms",
+        row=2,
+        col=1,
+    )
 
     fig_serve.update_layout(
-        height=550, template="plotly_dark",
-        paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+        height=550,
+        template="plotly_dark",
+        paper_bgcolor="#0a0e17",
+        plot_bgcolor="#0d1117",
         showlegend=False,
     )
     st.plotly_chart(fig_serve, use_container_width=True)
@@ -820,32 +1056,46 @@ elif page == "🚀 Model Serving Monitor":
     # Latency distribution
     col1, col2 = st.columns(2)
     with col1:
-        fig_hist = go.Figure(go.Histogram(
-            x=serving_df["latency_ms"], nbinsx=50,
-            marker_color="#34d399",
-        ))
-        fig_hist.add_vline(x=serving_df["latency_ms"].quantile(0.99),
-                          line_dash="dash", line_color="#f87171",
-                          annotation_text="P99")
+        fig_hist = go.Figure(
+            go.Histogram(
+                x=serving_df["latency_ms"],
+                nbinsx=50,
+                marker_color="#34d399",
+            )
+        )
+        fig_hist.add_vline(
+            x=serving_df["latency_ms"].quantile(0.99),
+            line_dash="dash",
+            line_color="#f87171",
+            annotation_text="P99",
+        )
         fig_hist.update_layout(
             title="Latency Distribution",
-            xaxis_title="Latency (ms)", yaxis_title="Count",
-            height=300, template="plotly_dark",
-            paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+            xaxis_title="Latency (ms)",
+            yaxis_title="Count",
+            height=300,
+            template="plotly_dark",
+            paper_bgcolor="#0a0e17",
+            plot_bgcolor="#0d1117",
         )
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with col2:
-        fig_err = go.Figure(go.Bar(
-            x=serving_df["timestamp"][::10],
-            y=serving_df["errors"].rolling(10).sum().iloc[::10],
-            marker_color="#f87171",
-        ))
+        fig_err = go.Figure(
+            go.Bar(
+                x=serving_df["timestamp"][::10],
+                y=serving_df["errors"].rolling(10).sum().iloc[::10],
+                marker_color="#f87171",
+            )
+        )
         fig_err.update_layout(
             title="Error Count (10-min buckets)",
-            xaxis_title="Time", yaxis_title="Errors",
-            height=300, template="plotly_dark",
-            paper_bgcolor="#0a0e17", plot_bgcolor="#0d1117",
+            xaxis_title="Time",
+            yaxis_title="Errors",
+            height=300,
+            template="plotly_dark",
+            paper_bgcolor="#0a0e17",
+            plot_bgcolor="#0d1117",
         )
         st.plotly_chart(fig_err, use_container_width=True)
 
@@ -873,7 +1123,7 @@ elif page == "⚙️ CI/CD Pipeline View":
                 ("Pytest + Coverage", "90s", "✅"),
                 ("Gym Env Validation", "10s", "✅"),
                 ("Upload to Codecov", "5s", "✅"),
-            ]
+            ],
         },
         {
             "name": "Training Pipeline (train.yml)",
@@ -888,7 +1138,7 @@ elif page == "⚙️ CI/CD Pipeline View":
                 ("Validate Model Thresholds", "30s", "⏳"),
                 ("Register in MLflow (Staging)", "10s", "⏳"),
                 ("Upload Artifacts", "15s", "⏳"),
-            ]
+            ],
         },
         {
             "name": "Deploy Pipeline (deploy.yml)",
@@ -901,7 +1151,7 @@ elif page == "⚙️ CI/CD Pipeline View":
                 ("Deploy to Environment", "60s", "⏳"),
                 ("Health Check", "30s", "⏳"),
                 ("Slack Notification", "2s", "⏳"),
-            ]
+            ],
         },
         {
             "name": "Release Pipeline (release.yml)",
@@ -911,16 +1161,18 @@ elif page == "⚙️ CI/CD Pipeline View":
                 ("Checkout (full history)", "10s", "⏳"),
                 ("Generate Changelog", "5s", "⏳"),
                 ("Create GitHub Release", "3s", "⏳"),
-            ]
+            ],
         },
     ]
 
     for pipeline in pipelines:
-        with st.expander(f"**{pipeline['name']}** — Trigger: {pipeline['trigger']}", expanded=True):
+        with st.expander(
+            f"**{pipeline['name']}** — Trigger: {pipeline['trigger']}", expanded=True
+        ):
             for i, (step_name, duration, status) in enumerate(pipeline["steps"]):
                 col1, col2, col3, col4 = st.columns([0.5, 4, 1, 0.5])
                 with col1:
-                    st.markdown(f"**{i+1}**")
+                    st.markdown(f"**{i + 1}**")
                 with col2:
                     st.markdown(f"`{step_name}`")
                 with col3:
@@ -941,7 +1193,7 @@ elif page == "🏗️ Architecture Explorer":
         "🌍 Custom Gym Environment": {
             "desc": "Gymnasium-compatible resource allocation simulator",
             "key_file": "src/envs/resource_alloc_env.py",
-            "code": '''class ResourceAllocationEnv(gym.Env):
+            "code": """class ResourceAllocationEnv(gym.Env):
     def __init__(self, config=None):
         cfg = config or {}
         self.num_nodes = cfg.get("num_nodes", 5)
@@ -968,12 +1220,12 @@ elif page == "🏗️ Architecture Explorer":
                 self._assign_task(node_idx, task)
                 sla_ok = self._estimate_latency(node_idx) <= task["deadline"]
                 rewards.append(1.0 + 2.0*float(sla_ok) - 0.5*latency)
-        return self._get_obs(), sum(rewards), terminated, False, info''',
+        return self._get_obs(), sum(rewards), terminated, False, info""",
         },
         "🧠 PPO Agent (Ray/RLlib)": {
             "desc": "Proximal Policy Optimization configured via Ray/RLlib",
             "key_file": "src/agents/ppo_agent.py",
-            "code": '''config = (
+            "code": """config = (
     PPOConfig()
     .environment(env="ResourceAlloc-v0", env_config=env_cfg)
     .framework("torch")
@@ -985,7 +1237,7 @@ elif page == "🏗️ Architecture Explorer":
         model={"fcnet_hiddens": [256, 256, 128], "fcnet_activation": "relu"},
     )
     .rollouts(num_rollout_workers=4)  # Parallel data collection
-)''',
+)""",
         },
         "🔄 Federated Aggregation": {
             "desc": "FedAvg / FedProx weight aggregation strategies",
@@ -1009,7 +1261,7 @@ elif page == "🏗️ Architecture Explorer":
         "📡 Federation Server + Clients": {
             "desc": "Ray Actors for distributed server-client communication",
             "key_file": "src/federation/server.py",
-            "code": '''@ray.remote
+            "code": """@ray.remote
 class FederationServer:
     def run_federation(self):
         for round_num in range(self.num_rounds):
@@ -1028,12 +1280,12 @@ class FederationServer:
             self.global_model.load_state_dict(new_global)
 
             # 4. Log metrics to W&B + Prometheus
-            wandb.log({"global/avg_reward": avg_reward, ...})''',
+            wandb.log({"global/avg_reward": avg_reward, ...})""",
         },
         "📊 W&B + MLflow": {
             "desc": "Experiment tracking + model versioning",
             "key_file": "src/mlops/experiment_tracker.py + model_registry.py",
-            "code": '''# W&B: Live tracking during training
+            "code": """# W&B: Live tracking during training
 wandb.init(project="federated-rl-resource-alloc",
            config=config, tags=["fedavg"])
 wandb.log({"round": r, "global/avg_reward": reward,
@@ -1046,12 +1298,12 @@ with mlflow.start_run(run_name="gha-abc123"):
     mlflow.pytorch.log_model(model, "model",
         registered_model_name="fed-rl-resource-alloc")
 # Promote: client.transition_model_version_stage(
-#     name="fed-rl-resource-alloc", version=3, stage="Production")''',
+#     name="fed-rl-resource-alloc", version=3, stage="Production")""",
         },
         "🔔 Prometheus + Grafana": {
             "desc": "Metrics collection, time-series storage, dashboards, alerts",
             "key_file": "src/mlops/metrics_exporter.py",
-            "code": '''from prometheus_client import Counter, Gauge, Histogram, start_http_server
+            "code": """from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 round_counter = Counter("fed_rounds_total", "Rounds completed")
 global_reward = Gauge("fed_global_reward", "Current reward")
@@ -1069,12 +1321,12 @@ global_reward.set(42.5)
 # - alert: HighPredictionLatency
 #   expr: histogram_quantile(0.99, prediction_latency_seconds_bucket) > 1.0
 #   for: 2m
-#   severity: critical''',
+#   severity: critical""",
         },
         "🚀 FastAPI Serving": {
             "desc": "Production model serving with Prometheus metrics",
             "key_file": "src/mlops/serving.py",
-            "code": '''app = FastAPI(title="Fed-RL Resource Allocator")
+            "code": """app = FastAPI(title="Fed-RL Resource Allocator")
 MODEL = mlflow.pytorch.load_model("models:/fed-rl-resource-alloc/Production")
 
 @app.post("/predict")
@@ -1089,7 +1341,7 @@ async def predict(req: PredictRequest):
 
 @app.get("/metrics")  # Prometheus scrapes this
 async def metrics():
-    return Response(generate_latest(), media_type="text/plain")''',
+    return Response(generate_latest(), media_type="text/plain")""",
         },
     }
 

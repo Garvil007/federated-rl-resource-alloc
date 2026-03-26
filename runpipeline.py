@@ -71,11 +71,11 @@ console = Console() if HAS_RICH else None
 
 def header(text, style="bold cyan"):
     if HAS_RICH:
-        console.print(f"\n{'━'*60}", style="dim")
+        console.print(f"\n{'━' * 60}", style="dim")
         console.print(f"  {text}", style=style)
-        console.print(f"{'━'*60}", style="dim")
+        console.print(f"{'━' * 60}", style="dim")
     else:
-        print(f"\n{'='*60}\n  {text}\n{'='*60}")
+        print(f"\n{'=' * 60}\n  {text}\n{'=' * 60}")
 
 
 def info(text):
@@ -466,7 +466,7 @@ def run_single_agent_training():
                 progress.update(
                     task,
                     advance=1,
-                    description=f"Ep {ep+1} | Reward: {ep_reward:.1f} | SLA: {inf['sla_rate']:.1%}",
+                    description=f"Ep {ep + 1} | Reward: {ep_reward:.1f} | SLA: {inf['sla_rate']:.1%}",
                 )
     else:
         for ep in range(num_episodes):
@@ -740,7 +740,7 @@ def run_federated_training(
                 progress.update(
                     task,
                     advance=1,
-                    description=f"Round {r+1} | Reward: {avg_reward:.1f} | SLA: {avg_sla:.1%} | Div: {avg_div:.3f}",
+                    description=f"Round {r + 1} | Reward: {avg_reward:.1f} | SLA: {avg_sla:.1%} | Div: {avg_div:.3f}",
                 )
     else:
         for r in range(num_rounds):

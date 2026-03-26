@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import ray
@@ -9,7 +10,11 @@ from omegaconf import DictConfig, OmegaConf
 from src.federation.server import FederationServer
 
 
-@hydra.main(version_base=None, config_path="../configs/training", config_name="federated_5clients")
+@hydra.main(
+    version_base=None,
+    config_path="../configs/training",
+    config_name="federated_5clients",
+)
 def main(cfg: DictConfig):
     # Initialize Ray
     ray.init()
@@ -36,7 +41,9 @@ def main(cfg: DictConfig):
     if log_history:
         last = log_history[-1]
         wandb.summary["final/avg_reward"] = last.get("global/avg_reward", 0)
-        wandb.summary["final/weight_divergence"] = last.get("global/weight_divergence", 0)
+        wandb.summary["final/weight_divergence"] = last.get(
+            "global/weight_divergence", 0
+        )
         wandb.summary["final/reward_std"] = last.get("global/reward_std", 0)
 
         # Compute improvement trend (last 5 rounds vs first 5)
@@ -47,6 +54,7 @@ def main(cfg: DictConfig):
 
     # Save final global model
     import torch
+
     os.makedirs("outputs", exist_ok=True)
     torch.save(final_weights, "outputs/best_model.pt")
     wandb.save("outputs/best_model.pt")
