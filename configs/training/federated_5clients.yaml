@@ -1,17 +1,17 @@
 federation:
   num_clients: 5
-  num_rounds: 30
-  local_epochs: 3
-  strategy: "scaffold"      
-  mu: 0.01                  
-  client_sampling_rate: 1.0 
+  num_rounds: 100
+  local_epochs: 5
+  strategy: "scaffold"
+  mu: 0.01
+  client_sampling_rate: 1.0
 
 client_envs:
   - num_nodes: 3
     task_arrival_rate: 1.5
     cpu_range: [30, 80]
     mem_range: [16, 32]
-    episode_length: 200
+    episode_length: 500
     max_nodes: 10
 
   # Client 1: Large data center, high traffic
@@ -19,7 +19,7 @@ client_envs:
     task_arrival_rate: 8.0
     cpu_range: [100, 200]
     mem_range: [64, 256]
-    episode_length: 200
+    episode_length: 500
     max_nodes: 10
 
   # Client 2: Mobile edge, bursty traffic
@@ -27,7 +27,7 @@ client_envs:
     task_arrival_rate: 5.0
     cpu_range: [20, 60]
     mem_range: [8, 16]
-    episode_length: 200
+    episode_length: 500
     max_nodes: 10
 
   # Client 3: Industrial IoT, steady traffic
@@ -35,7 +35,7 @@ client_envs:
     task_arrival_rate: 3.0
     cpu_range: [50, 100]
     mem_range: [32, 64]
-    episode_length: 200
+    episode_length: 500
     max_nodes: 10
 
   # Client 4: Rural edge, sparse traffic
@@ -43,7 +43,7 @@ client_envs:
     task_arrival_rate: 0.8
     cpu_range: [20, 50]
     mem_range: [8, 16]
-    episode_length: 200
+    episode_length: 500
     max_nodes: 10
 
 training:
@@ -55,8 +55,10 @@ training:
   obs_dim: 70   # max_nodes*4 + max_pending*3 = 10*4 + 10*3
   act_dim: 110  # (max_nodes+1) * max_pending = 11 * 10
   hidden_dim: 256
-  entropy_coeff: 0.01
+  entropy_coeff: 0.05
   value_coeff: 0.5
-  num_rounds: 30
-  local_epochs: 3
+  rollouts_per_epoch: 3
+  warmup_steps: 5
+  num_rounds: 100
+  local_epochs: 5
   strategy: "scaffold"

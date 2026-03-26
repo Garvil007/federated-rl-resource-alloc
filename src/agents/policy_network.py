@@ -70,6 +70,7 @@ class PolicyNetwork(nn.Module):
         self.ln_in = nn.LayerNorm(hidden_dim)
         self.res1 = ResidualBlock(hidden_dim)
         self.res2 = ResidualBlock(hidden_dim)
+        self.res3 = ResidualBlock(hidden_dim)
 
         # Task-aware attention
         attn_dim = hidden_dim // 4
@@ -77,9 +78,9 @@ class PolicyNetwork(nn.Module):
 
         # Actor head (combines residual features + attention context)
         actor_in_dim = hidden_dim + attn_dim
-        self.actor_fc = nn.Linear(actor_in_dim, hidden_dim // 2)
-        self.actor_ln = nn.LayerNorm(hidden_dim // 2)
-        self.actor_out = nn.Linear(hidden_dim // 2, act_dim)
+        self.actor_fc = nn.Linear(actor_in_dim, hidden_dim)
+        self.actor_ln = nn.LayerNorm(hidden_dim)
+        self.actor_out = nn.Linear(hidden_dim, act_dim)
 
         # Critic head — decoupled backbone so actor/critic don't compete
         self.critic_fc1 = nn.Linear(hidden_dim, hidden_dim // 2)
@@ -117,6 +118,7 @@ class PolicyNetwork(nn.Module):
         h = F.relu(self.ln_in(self.fc_in(x)))
         h = self.res1(h)
         h = self.res2(h)
+        h = self.res3(h)
 
         # Actor: residual features + attention context
         actor_in = torch.cat([h, attn_ctx], dim=-1)

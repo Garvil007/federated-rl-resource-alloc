@@ -5,6 +5,31 @@ from src.envs.resource_alloc_env import ResourceAllocationEnv
 from src.agents.policy_network import PolicyNetwork
 
 
+class RunningMeanStd:
+    """Welford's online algorithm for running mean/std."""
+
+    def __init__(self):
+        self.mean = 0.0
+        self.var = 1.0
+        self.count = 1e-4
+
+    def update(self, x):
+        batch_mean = x.mean().item()
+        batch_var = x.var().item() if len(x) > 1 else 0.0
+        batch_count = len(x)
+        delta = batch_mean - self.mean
+        total = self.count + batch_count
+        self.mean += delta * batch_count / total
+        m_a = self.var * self.count
+        m_b = batch_var * batch_count
+        m2 = m_a + m_b + delta**2 * self.count * batch_count / total
+        self.var = m2 / total
+        self.count = total
+
+    def normalize(self, x):
+        return (x - self.mean) / (self.var**0.5 + 1e-8)
+
+
 @ray.remote
 class FederatedClient:
     def __init__(self, client_id: int, env_config: dict, train_config: dict):
@@ -19,17 +44,19 @@ class FederatedClient:
         self.gae_lambda = train_config.get("gae_lambda", 0.95)
         self.clip_epsilon = train_config.get("clip_epsilon", 0.2)
         self.ppo_epochs = train_config.get("ppo_epochs", 4)
-        self.entropy_coeff = train_config.get("entropy_coeff", 0.01)
+        self.entropy_coeff = train_config.get("entropy_coeff", 0.05)
         self.value_coeff = train_config.get("value_coeff", 0.5)
         self.max_nodes = self.env.max_nodes
         self.max_pending = self.env.max_pending
+        self.rollouts_per_epoch = train_config.get("rollouts_per_epoch", 3)
 
         self.policy = PolicyNetwork(
             obs_dim, act_dim, hidden_dim, max_nodes=self.max_nodes
         )
+        base_lr = train_config.get("lr", 3e-4)
         self.optimizer = torch.optim.Adam(
             self.policy.parameters(),
-            lr=train_config.get("lr", 3e-4),
+            lr=base_lr,
         )
         total_steps = train_config.get("num_rounds", 100) * train_config.get(
             "local_epochs", 5
@@ -37,6 +64,14 @@ class FederatedClient:
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=max(total_steps, 1), eta_min=1e-5
         )
+
+        # LR warmup
+        self.warmup_steps = train_config.get("warmup_steps", 5)
+        self.base_lr = base_lr
+        self.train_step_count = 0
+
+        # Running reward normalizer
+        self.reward_normalizer = RunningMeanStd()
 
         self.global_weights = None  # For FedProx
         self.control_variate = None  # For Scaffold (per-client c_i)
@@ -64,13 +99,33 @@ class FederatedClient:
         weights_before = {k: v.clone() for k, v in self.policy.state_dict().items()}
 
         for epoch in range(num_epochs):
-            # Collect rollout
-            trajectory = self._collect_rollout()
+            # LR warmup
+            self.train_step_count += 1
+            if self.train_step_count <= self.warmup_steps:
+                warmup_lr = self.base_lr * (self.train_step_count / self.warmup_steps)
+                for pg in self.optimizer.param_groups:
+                    pg["lr"] = warmup_lr
+
+            # Collect MULTIPLE rollouts for lower-variance gradient estimates
+            all_trajectories = []
+            for _ in range(self.rollouts_per_epoch):
+                traj = self._collect_rollout()
+                all_trajectories.append(traj)
+
+            # Merge trajectories
+            trajectory = self._merge_trajectories(all_trajectories)
 
             episode_reward = sum(trajectory["rewards"])
             episode_samples = len(trajectory["rewards"])
 
-            # PPO update: multiple SGD passes on the same trajectory
+            # Normalize rewards using running statistics
+            raw_rewards = torch.FloatTensor(trajectory["rewards"])
+            self.reward_normalizer.update(raw_rewards)
+            trajectory["rewards"] = self.reward_normalizer.normalize(
+                raw_rewards
+            ).tolist()
+
+            # PPO update: multiple SGD passes on the merged trajectory
             epoch_loss = self._ppo_update(trajectory, strategy, mu)
 
             total_samples += episode_samples
@@ -149,6 +204,27 @@ class FederatedClient:
             trajectory["final_info"] = info
 
         return trajectory
+
+    def _merge_trajectories(self, trajectories):
+        """Merge multiple rollout trajectories into one for PPO update."""
+        merged = {
+            "observations": [],
+            "actions": [],
+            "log_probs": [],
+            "rewards": [],
+            "values": [],
+            "bootstrap_value": 0.0,
+            "final_info": trajectories[-1]["final_info"],
+        }
+        for traj in trajectories:
+            merged["observations"].extend(traj["observations"])
+            merged["actions"].extend(traj["actions"])
+            merged["log_probs"].extend(traj["log_probs"])
+            merged["rewards"].extend(traj["rewards"])
+            merged["values"].extend(traj["values"])
+        # Use the last trajectory's bootstrap value
+        merged["bootstrap_value"] = trajectories[-1]["bootstrap_value"]
+        return merged
 
     def _ppo_update(self, trajectory, strategy, mu):
         """PPO clipped objective with multiple SGD passes."""
@@ -253,7 +329,7 @@ class FederatedClient:
                                 self.global_control_variate[n] - self.control_variate[n]
                             )
 
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.5)
                 self.optimizer.step()
                 total_loss += loss.item()
 

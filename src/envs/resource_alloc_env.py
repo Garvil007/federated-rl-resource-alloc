@@ -65,12 +65,12 @@ class ResourceAllocationEnv(gym.Env):
         )
 
         # Reward weights (tunable hyperparameters)
-        self.w_throughput = cfg.get("w_throughput", 1.0)
-        self.w_latency = cfg.get("w_latency", -0.3)
-        self.w_energy = cfg.get("w_energy", -0.1)
-        self.w_sla = cfg.get("w_sla", 2.0)
-        self.w_drop = cfg.get("w_drop", -2.0)
-        self.w_util = cfg.get("w_util", 0.3)  # utilization bonus
+        self.w_throughput = cfg.get("w_throughput", 0.5)
+        self.w_latency = cfg.get("w_latency", -0.15)
+        self.w_energy = cfg.get("w_energy", -0.05)
+        self.w_sla = cfg.get("w_sla", 1.0)
+        self.w_drop = cfg.get("w_drop", -0.5)
+        self.w_util = cfg.get("w_util", 0.2)  # utilization bonus
 
         self.reset()
 
@@ -130,9 +130,11 @@ class ResourceAllocationEnv(gym.Env):
         self.pending_tasks = self._generate_tasks()
 
         terminated = self.current_step >= self.episode_length
+        # Clip total reward to stabilize value estimation
+        total_reward = np.clip(sum(rewards), -1.0, 1.0) if rewards else 0.0
         return (
             self._get_obs(),
-            sum(rewards),
+            total_reward,
             terminated,
             False,  # truncated
             self._get_info(),

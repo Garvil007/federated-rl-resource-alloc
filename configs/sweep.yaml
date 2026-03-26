@@ -8,28 +8,21 @@ method: bayes
 metric:
   name: global/avg_reward
   goal: maximize
-run_cap: 12
 parameters:
   federation.num_rounds:
-    values: [20, 30, 50]
+    values: [50, 100, 200]
   federation.local_epochs:
-    values: [3, 5]
+    values: [3, 5, 10]
   federation.strategy:
-    values: ["fedavg", "fedprox", "fednova", "scaffold"]
+    values: ["fedavg", "fedprox", "scaffold"]
   federation.mu:
     min: 0.001
-    max: 0.05
+    max: 0.1
   training.lr:
     distribution: log_uniform_values
-    min: 0.0001
-    max: 0.003
+    min: 0.00001
+    max: 0.01
   training.entropy_coeff:
     distribution: log_uniform_values
     min: 0.005
-    max: 0.05
-  training.gamma:
-    values: [0.95, 0.99]
-  training.clip_epsilon:
-    values: [0.1, 0.2, 0.3]
-  training.gae_lambda:
-    values: [0.9, 0.95]
+    max: 0.1
